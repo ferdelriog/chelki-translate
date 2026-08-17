@@ -46,6 +46,14 @@ errores de ortografía, tildes, puntuación o concordancia, propone una versión
 corregida en una tarjeta verde. Nada se aplica sin que pulses *Usar corrección*.
 Se desactiva en el menú `…`.
 
+La corrección la hace el modelo on‑device de Apple Intelligence. Si responde algo
+que no se parece al original —divaga, resume o filtra sus propias instrucciones—
+la propuesta se descarta y se reintenta. Cuando aun así no hay una corrección
+fiable, la app prefiere **no proponer nada** antes que sugerir un disparate.
+
+En equipos sin Apple Intelligence el respaldo es `NSSpellChecker`, que corrige
+palabra por palabra y por tanto acierta menos.
+
 ## Privacidad: nada sale de tu Mac
 
 No es una promesa del código, la impone el sistema operativo. La app se firma con

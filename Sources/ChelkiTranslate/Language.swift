@@ -61,8 +61,14 @@ enum LanguageDetector {
     /// Devuelve el idioma detectado, limitado a los que soporta la app.
     /// Si no logra decidirse, devuelve `nil`.
     static func detect(_ text: String) -> Detection? {
-        let trimmed = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(2000))
-        guard trimmed.count >= 2 else { return nil }
+        let raw = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(2000))
+        guard raw.count >= 2 else { return nil }
+
+        // Un nombre propio o una URL no dicen nada del idioma, pero sí desvían al
+        // reconocedor. Los quitamos ANTES de decidir; el texto que se traduce
+        // sigue intacto.
+        let cleaned = stripNoise(raw)
+        let trimmed = cleaned.count >= 6 ? cleaned : raw
 
         // Señales inequívocas de español: ni nos molestamos en dudar.
         if trimmed.lowercased().contains(where: { "áéíóúñ¿¡ü".contains($0) }) {
@@ -97,6 +103,69 @@ enum LanguageDetector {
         if wordCount <= 2 { confidence *= 0.75 }
 
         return Detection(language: winner, confidence: confidence)
+    }
+
+    /// Quita lo que no aporta idioma y sí confunde: encabezados de chat con el
+    /// nombre de quien escribe, menciones, URLs, horas, emojis y código.
+    ///
+    /// Se usa **sólo** para detectar el idioma. Un «David» suelto hacía que un
+    /// mensaje en inglés pegado desde Slack se tomara por español.
+    private static func stripNoise(_ text: String) -> String {
+        var lines = text.components(separatedBy: .newlines)
+
+        lines = lines.filter { line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { return false }
+
+            // «David Pérez  10:32», «David Pérez (él) 3:45 p. m.»
+            if looksLikeChatHeader(trimmed) { return false }
+            return true
+        }
+
+        var result = lines.joined(separator: "\n")
+
+        let patterns = [
+            "```[\\s\\S]*?```",              // bloques de código
+            "`[^`]*`",                       // código en línea
+            "https?://\\S+",                 // enlaces
+            "\\bwww\\.\\S+",
+            "\\S+@\\S+\\.\\S+",              // correos
+            "[@#][\\w.-]+",                  // menciones y canales
+            "<[^>]+>",                       // etiquetas y enlaces de Slack
+            ":[a-z0-9_+-]+:",                // :emoji:
+            "\\b\\d{1,2}:\\d{2}\\s*([ap]\\.?\\s?m\\.?)?", // horas
+            "\\d+"                           // números sueltos
+        ]
+        for pattern in patterns {
+            result = result.replacingOccurrences(of: pattern,
+                                                 with: " ",
+                                                 options: [.regularExpression, .caseInsensitive])
+        }
+
+        // Emojis y símbolos.
+        result = String(result.unicodeScalars.filter { scalar in
+            !(scalar.properties.isEmoji && scalar.properties.isEmojiPresentation)
+        })
+
+        return result.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Una línea corta hecha sólo de nombres propios, opcionalmente con una hora.
+    private static func looksLikeChatHeader(_ line: String) -> Bool {
+        let withoutTime = line.replacingOccurrences(
+            of: "\\b\\d{1,2}:\\d{2}\\s*([ap]\\.?\\s?m\\.?)?",
+            with: "",
+            options: [.regularExpression, .caseInsensitive]
+        ).trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let words = withoutTime.split(whereSeparator: { !$0.isLetter && $0 != "." }).map(String.init)
+        guard !words.isEmpty, words.count <= 4 else { return false }
+
+        // Todas las palabras empiezan en mayúscula: parece una firma, no una frase.
+        let capitalized = words.allSatisfy { $0.first?.isUppercase == true }
+        let hadTime = withoutTime.count < line.count
+        return capitalized && (hadTime || words.count <= 3)
     }
 
     /// Pistas baratas: caracteres y palabras que sólo existen en español.
