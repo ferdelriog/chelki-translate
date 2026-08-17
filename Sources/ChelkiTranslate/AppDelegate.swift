@@ -104,7 +104,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             // 3. Corrección gramatical.
             log("modelo on-device: \(GrammarService.isModelAvailable ? "disponible" : "no disponible")")
             for text in ["oy fui al banko y no avia nadie atendiendo por que era feriado",
-                         "i dont know if he have finish the report yesterday"] {
+                         "i dont know if he have finish the report yesterday",
+                         "sto es una pruba validndo el corector"] {
                 if let correction = await GrammarService.correct(text, language: LanguageDetector.detect(text)?.language ?? .spanish) {
                     log("corrigió [\(correction.engine)] → \(correction.text)")
                 } else {

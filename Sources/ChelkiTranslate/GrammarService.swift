@@ -1,6 +1,18 @@
 import AppKit
 import FoundationModels
 
+/// Salida estructurada del modelo.
+///
+/// Pedir el texto "a secas" no basta: el modelo antepone cosas como
+/// «¡Claro! Aquí tienes el texto corregido:» pese a prohibírselo. Con un tipo
+/// generado el framework devuelve sólo el campo que pedimos.
+@available(macOS 26.0, *)
+@Generable
+struct CorrectedText {
+    @Guide(description: "El texto corregido y nada más. Sin preámbulos ni comentarios.")
+    var texto: String
+}
+
 /// Corrección de ortografía y gramática, siempre en el equipo del usuario.
 ///
 /// Primero intenta el modelo on-device de Apple Intelligence; si no está
@@ -48,30 +60,26 @@ enum GrammarService {
     private static func correctWithModel(_ text: String, language: Language) async -> String? {
         let languageName = language == .spanish ? "español" : "inglés"
 
+        // Instrucciones deliberadamente breves: con una lista larga de reglas el
+        // modelo termina devolviendo las propias reglas como si fueran el texto.
         let instructions = """
-        Eres un corrector de estilo profesional en \(languageName).
-
-        Corrige únicamente ortografía, tildes, puntuación, mayúsculas y concordancia \
-        gramatical del texto que recibas.
-
-        Reglas estrictas:
-        - Nunca cambies el significado, el tono ni la intención del texto.
-        - Mantén la misma persona gramatical, el mismo tiempo verbal y el mismo registro.
-        - No traduzcas: la respuesta va en \(languageName).
-        - No resumas, no expandas y no agregues información nueva.
-        - Conserva los saltos de línea, las URL, los nombres propios, los emojis, \
-        el código y los números tal cual están.
-        - Si el texto ya está correcto, devuélvelo idéntico.
-        - Responde solamente con el texto corregido, sin comillas, sin explicaciones \
-        y sin ningún comentario.
+        Corriges ortografía, tildes, puntuación, mayúsculas y concordancia en \
+        \(languageName). No reformules ni traduzcas: conserva las palabras del autor \
+        y arregla sólo lo que esté mal escrito. Respeta las tildes que ya estén bien \
+        puestas. No agregues ni quites palabras. Si el texto ya está correcto, \
+        devuélvelo idéntico.
         """
 
         do {
             let session = LanguageModelSession(instructions: instructions)
             let options = GenerationOptions(temperature: 0.1)
-            let response = try await session.respond(to: text, options: options)
-            let result = clean(response.content)
-            // Un modelo que se desboca y reescribe todo no nos sirve.
+            // Delimitar el texto evita que el modelo confunda las instrucciones
+            // con lo que tiene que corregir.
+            let response = try await session.respond(to: "Texto a corregir:\n\(text)",
+                                                     generating: CorrectedText.self,
+                                                     options: options)
+            let result = clean(response.content.texto)
+            // Red de seguridad por si el modelo divaga o filtra el prompt.
             guard !result.isEmpty, isPlausible(result, original: text) else { return nil }
             return result
         } catch {
@@ -82,7 +90,7 @@ enum GrammarService {
     /// Descarta respuestas donde el modelo se salió del guion (resumió o divagó).
     private static func isPlausible(_ corrected: String, original: String) -> Bool {
         let ratio = Double(corrected.count) / Double(max(original.count, 1))
-        return ratio > 0.5 && ratio < 1.8
+        return ratio > 0.5 && ratio < 2.0
     }
 
     private static func clean(_ text: String) -> String {
