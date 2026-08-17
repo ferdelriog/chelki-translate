@@ -57,8 +57,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     /// Comprobación de humo: detección, cambio automático de sentido,
     /// traducción y corrección gramatical. Reporta por stderr.
     private func runSelfTest() {
-        show()
-
         Task { @MainActor in
             @MainActor func log(_ line: String) {
                 FileHandle.standardError.write(Data("SELFTEST \(line)\n".utf8))
@@ -69,12 +67,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
                 model.sourceLanguage = pinnedSource
                 model.inputText = text
                 model.translate()
+                let start = Date()
                 for _ in 0..<60 {
                     try? await Task.sleep(for: .milliseconds(400))
-                    if !model.outputText.isEmpty { return model.outputText }
+                    if !model.outputText.isEmpty {
+                        return String(format: "(%.1fs) ", Date().timeIntervalSince(start))
+                            + model.outputText
+                    }
                 }
                 return "«sin resultado: \(model.status.message ?? "?")»"
             }
+
+            // El ícono de la barra necesita un ciclo de runloop antes de poder
+            // anclar el panel; recién ahí la vista existe y hay sesión de traducción.
+            try? await Task.sleep(for: .milliseconds(800))
+            show()
+            log("panel abierto: \(popover.isShown)")
+            try? await Task.sleep(for: .seconds(1))
+
+            let corrector = ProcessInfo.processInfo.environment["CHELKI_NO_GRAMMAR"] != "1"
+            model.autoCorrectGrammar = corrector
+            log("corrección automática: \(corrector ? "activada" : "desactivada")")
 
             // 1. Idioma fijado en español, pero el texto llega en inglés.
             var out = await translate("Hey, can you send me the report before noon?",
