@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  App Sandbox activado y SIN permisos de red.
+
+	  Al no declarar com.apple.security.network.client ni .network.server,
+	  el kernel bloquea cualquier conexión saliente o entrante de este proceso.
+	  No es una promesa del código: lo impone el sistema operativo.
+
+	  Tampoco pedimos acceso al disco: sólo se leen los archivos que el usuario
+	  elige explícitamente en el diálogo de "Imagen".
+	-->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+
+	<key>com.apple.security.files.user-selected.read-only</key>
+	<true/>
+</dict>
+</plist>
