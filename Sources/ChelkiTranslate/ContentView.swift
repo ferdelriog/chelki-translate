@@ -151,7 +151,8 @@ struct ContentView: View {
 
     private var sourceCaption: String {
         guard let detection = model.detection, detection.isReliable else { return "origen" }
-        return model.detectionOverrodeSelection ? "detectado · cambiado solo" : "detectado"
+        // Corto a propósito: el pill es angosto y el texto se truncaba.
+        return model.detectionOverrodeSelection ? "cambió solo" : "detectado"
     }
 
     private func languagePill(_ language: Language, caption: String, highlighted: Bool) -> some View {

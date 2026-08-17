@@ -17,6 +17,10 @@ gramática. Sin API keys, sin cuentas y sin conexión a internet.
   <img alt="Licencia MIT" src="https://img.shields.io/badge/licencia-MIT-blue">
 </p>
 
+<p align="center">
+  <img src="docs/captura.png" width="420" alt="El panel del Traductor colgando de la barra de menús: detecta que el texto está en español y lo traduce al inglés">
+</p>
+
 ## Cómo se usa
 
 - **Clic en el ícono** de la barra de menús, o **⌥⌘T** desde cualquier app.
