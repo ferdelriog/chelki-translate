@@ -1,7 +1,21 @@
-# Traductor · barra de menús de macOS
+<h1 align="center">🌐 Traductor</h1>
 
-Traductor español ↔ inglés que vive en la barra superior del Mac. Un clic, pegas
-texto **o** una imagen, y tienes la traducción. Sin API keys y sin abrir el navegador.
+<p align="center"><b>Traduce español ↔ inglés desde la barra de menús, sin que nada salga de tu Mac.</b></p>
+
+<p align="center">
+Un clic o <b>⌥⌘T</b> desde cualquier app, pegas texto <b>o</b> una imagen, y tienes la
+traducción. Detecta el idioma solo, lee el texto de las imágenes y corrige la
+gramática. Sin API keys, sin cuentas y sin conexión a internet.
+</p>
+
+<p align="center">
+  <img alt="macOS 15+" src="https://img.shields.io/badge/macOS-15%2B-1d1d1f">
+  <img alt="Swift 6.2" src="https://img.shields.io/badge/Swift-6.2-F05138">
+  <img alt="Traducción on-device" src="https://img.shields.io/badge/traducci%C3%B3n-on--device-34C759">
+  <img alt="Sin API keys" src="https://img.shields.io/badge/API%20keys-ninguna-34C759">
+  <img alt="Red bloqueada por el sandbox" src="https://img.shields.io/badge/red-bloqueada%20por%20sandbox-0A84FF">
+  <img alt="Licencia MIT" src="https://img.shields.io/badge/licencia-MIT-blue">
+</p>
 
 ## Cómo se usa
 
@@ -102,8 +116,8 @@ Sources/ChelkiTranslate/
   App.swift               punto de entrada (LSUIElement, sin ícono en el Dock)
   AppDelegate.swift       ícono de la barra, popover, atajo global
   ContentView.swift       toda la interfaz
-  TranslatorModel.swift   estado, detección, OCR, descargas y respaldo
-  TranslationEngine.swift disponibilidad de idiomas + respaldo en línea
+  TranslatorModel.swift   estado, detección, OCR y descarga de idiomas
+  TranslationEngine.swift disponibilidad de idiomas y errores
   GrammarService.swift    corrección con Apple Intelligence / NSSpellChecker
   OCRService.swift        lectura de texto en imágenes con Vision
   Language.swift          idiomas y detección automática
