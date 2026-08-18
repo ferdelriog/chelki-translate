@@ -44,7 +44,10 @@ Sólo cuando el texto es demasiado corto o ambiguo (confianza bajo 0,60) se usa 
 Mientras traduce, la app revisa el texto de entrada en su idioma y, si encuentra
 errores de ortografía, tildes, puntuación o concordancia, propone una versión
 corregida en una tarjeta verde. Nada se aplica sin que pulses *Usar corrección*.
-Se desactiva en el menú `…`.
+
+El check **Corregir**, junto a *Pegar* e *Imagen*, activa o desactiva la revisión.
+Mientras revisa, ese mismo check muestra el avance. La preferencia se recuerda
+entre sesiones y también está en el menú `…`.
 
 La corrección la hace el modelo on‑device de Apple Intelligence. Si responde algo
 que no se parece al original —divaga, resume o filtra sus propias instrucciones—

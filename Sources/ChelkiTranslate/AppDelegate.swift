@@ -113,6 +113,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
                 }
             }
 
+            // 4. El check de corrección apaga y enciende de verdad.
+            @MainActor func hayPropuesta(conCorreccion activa: Bool) async -> Bool {
+                model.clear()
+                model.autoCorrectGrammar = activa
+                model.inputText = "sto es una pruba validndo el corector"
+                model.translate()
+                for _ in 0..<40 {
+                    try? await Task.sleep(for: .milliseconds(400))
+                    if model.suggestion != nil { return true }
+                }
+                return false
+            }
+
+            let conCheck = await hayPropuesta(conCorreccion: true)
+            let sinCheck = await hayPropuesta(conCorreccion: false)
+            log("check activado → propone corrección: \(conCheck)")
+            log("check apagado  → propone corrección: \(sinCheck)")
+            log(conCheck && !sinCheck ? "check OK" : "check FALLA")
+
             NSApp.terminate(nil)
         }
     }

@@ -99,7 +99,7 @@ struct ContentView: View {
             Spacer()
 
             Menu {
-                Toggle("Corregir gramática automáticamente", isOn: $model.autoCorrectGrammar)
+                Toggle("Corregir textos automáticamente", isOn: $model.autoCorrectGrammar)
                 Toggle("Leer el portapapeles al abrir", isOn: $model.autoReadClipboard)
                 Divider()
                 Button("Abrir al iniciar sesión") { LoginItem.toggle() }
@@ -273,15 +273,7 @@ struct ContentView: View {
                     showingImporter = true
                 }
 
-                if model.isCorrecting {
-                    HStack(spacing: 4) {
-                        ProgressView().controlSize(.mini).scaleEffect(0.65)
-                        Text("revisando…")
-                            .font(.system(size: 10))
-                            .foregroundStyle(textSecondary)
-                    }
-                    .padding(.leading, 2)
-                }
+                grammarToggle
 
                 Spacer()
 
@@ -302,6 +294,48 @@ struct ContentView: View {
                 isTargeted: $isTargeted.animation(.easeOut(duration: 0.15))) { providers in
             handleDrop(providers)
         }
+    }
+
+    /// Check para activar o desactivar la corrección de textos.
+    /// Mientras revisa, el propio check muestra el avance en vez de ocupar
+    /// otro hueco en la fila.
+    private var grammarToggle: some View {
+        Button {
+            withAnimation(.snappy(duration: 0.18)) {
+                model.autoCorrectGrammar.toggle()
+            }
+        } label: {
+            HStack(spacing: 4) {
+                if model.isCorrecting {
+                    ProgressView()
+                        .controlSize(.mini)
+                        .scaleEffect(0.6)
+                        .frame(width: 10, height: 10)
+                } else {
+                    Image(systemName: model.autoCorrectGrammar ? "checkmark.square.fill" : "square")
+                        .font(.system(size: 10, weight: .semibold))
+                }
+                Text("Corregir")
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(model.autoCorrectGrammar ? success.opacity(0.20) : Color.white.opacity(0.07))
+                    .overlay(
+                        Capsule().strokeBorder(
+                            model.autoCorrectGrammar ? success.opacity(0.45) : Color.white.opacity(0.10),
+                            lineWidth: 0.8
+                        )
+                    )
+            )
+            .foregroundStyle(model.autoCorrectGrammar ? success : textSecondary)
+        }
+        .buttonStyle(.plain)
+        .help(model.autoCorrectGrammar
+              ? "Corrección de textos activada"
+              : "Corrección de textos desactivada")
     }
 
     private func imageChip(_ image: NSImage) -> some View {
