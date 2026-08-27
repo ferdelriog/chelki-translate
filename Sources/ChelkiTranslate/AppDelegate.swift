@@ -126,6 +126,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
                 return false
             }
 
+            // 5. La detección se puede apagar y entonces manda el par fijado.
+            @MainActor func direccion(auto: Bool, fijando: Language?, texto: String) async -> String {
+                model.clear()
+                model.autoDetectLanguage = auto
+                if let fijando { model.chooseLanguage(fijando, asSource: true) }
+                model.autoDetectLanguage = auto
+                model.inputText = texto
+                model.translate()
+                for _ in 0..<40 {
+                    try? await Task.sleep(for: .milliseconds(300))
+                    if !model.outputText.isEmpty { break }
+                }
+                return "\(model.effectiveSource.shortName)→\(model.effectiveTarget.shortName): \(model.outputText)"
+            }
+
+            let textoES = "Buenos días, el informe ya está listo"
+            log("auto ON,  fijo=EN, texto ES → " + (await direccion(auto: true, fijando: .english, texto: textoES)))
+            log("auto OFF, fijo=EN, texto ES → " + (await direccion(auto: false, fijando: .english, texto: textoES)))
+            log("auto OFF, fijo=ES, texto ES → " + (await direccion(auto: false, fijando: .spanish, texto: textoES)))
+
             let conCheck = await hayPropuesta(conCorreccion: true)
             let sinCheck = await hayPropuesta(conCorreccion: false)
             log("check activado → propone corrección: \(conCheck)")

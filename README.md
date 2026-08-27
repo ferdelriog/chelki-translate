@@ -39,6 +39,18 @@ a mano cuando hace falta.
 Sólo cuando el texto es demasiado corto o ambiguo (confianza bajo 0,60) se usa el
 último idioma conocido como respaldo.
 
+### Cuando prefieras mandar tú
+
+El botón de la varita ✨, a la izquierda del par de idiomas, apaga la detección.
+Con ella apagada el ícono cambia a una mano 👆 y el par se queda exactamente
+donde lo dejaste: cambias de dirección con ⇄ o pulsando cualquiera de los dos
+idiomas. Útil cuando el texto confunde al detector y sabes mejor que él en qué
+idioma está.
+
+Pulsar un idioma pasa a manual automáticamente — no tendría sentido elegirlo
+para que la detección lo pisara al instante siguiente. La preferencia se recuerda
+y también está en el menú `…`.
+
 ## Corrección de gramática
 
 Mientras traduce, la app revisa el texto de entrada en su idioma y, si encuentra

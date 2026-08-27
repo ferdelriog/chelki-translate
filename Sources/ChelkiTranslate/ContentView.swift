@@ -99,6 +99,7 @@ struct ContentView: View {
             Spacer()
 
             Menu {
+                Toggle("Detectar el idioma automáticamente", isOn: $model.autoDetectLanguage)
                 Toggle("Corregir textos automáticamente", isOn: $model.autoCorrectGrammar)
                 Toggle("Leer el portapapeles al abrir", isOn: $model.autoReadClipboard)
                 Divider()
@@ -123,10 +124,13 @@ struct ContentView: View {
     // MARK: - Barra de idiomas
 
     private var languageBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 7) {
+            autoDetectSwitch
+
             languagePill(model.effectiveSource,
                          caption: sourceCaption,
-                         highlighted: model.detection?.isReliable == true)
+                         highlighted: model.autoDetectLanguage && model.detection?.isReliable == true,
+                         asSource: true)
 
             Button {
                 withAnimation(.snappy(duration: 0.22)) { model.swapLanguages() }
@@ -141,21 +145,70 @@ struct ContentView: View {
             .help("Invertir la dirección de la traducción")
 
             languagePill(model.effectiveTarget,
-                         caption: "traducción",
-                         highlighted: false)
+                         caption: model.autoDetectLanguage ? "traducción" : "destino",
+                         highlighted: false,
+                         asSource: false)
         }
         .padding(.horizontal, 13)
         .padding(.bottom, 11)
         .animation(.snappy(duration: 0.22), value: model.effectiveSource)
     }
 
+    /// Enciende y apaga la detección de idioma. Apagada, el par se queda
+    /// donde lo dejes y sólo lo mueves tú.
+    private var autoDetectSwitch: some View {
+        Button {
+            withAnimation(.snappy(duration: 0.2)) {
+                model.autoDetectLanguage.toggle()
+            }
+        } label: {
+            Image(systemName: model.autoDetectLanguage ? "wand.and.stars" : "hand.point.up.left.fill")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(model.autoDetectLanguage ? accent : textSecondary)
+                .frame(width: 27, height: 27)
+                .background(
+                    Circle()
+                        .fill(model.autoDetectLanguage ? accent.opacity(0.15) : Color.white.opacity(0.07))
+                        .overlay(
+                            Circle().strokeBorder(
+                                model.autoDetectLanguage ? accent.opacity(0.4) : Color.white.opacity(0.12),
+                                lineWidth: 0.9
+                            )
+                        )
+                )
+        }
+        .buttonStyle(.plain)
+        .help(model.autoDetectLanguage
+              ? "Detección automática activada — pulsa para elegir el idioma tú"
+              : "Modo manual — pulsa para volver a detectar el idioma solo")
+    }
+
     private var sourceCaption: String {
+        guard model.autoDetectLanguage else { return "manual" }
         guard let detection = model.detection, detection.isReliable else { return "origen" }
         // Corto a propósito: el pill es angosto y el texto se truncaba.
         return model.detectionOverrodeSelection ? "cambió solo" : "detectado"
     }
 
-    private func languagePill(_ language: Language, caption: String, highlighted: Bool) -> some View {
+    private func languagePill(_ language: Language,
+                              caption: String,
+                              highlighted: Bool,
+                              asSource: Bool) -> some View {
+        Button {
+            // Con dos idiomas, pulsar el pill significa «quiero el otro».
+            withAnimation(.snappy(duration: 0.2)) {
+                model.chooseLanguage(language.opposite, asSource: asSource)
+            }
+        } label: {
+            languagePillLabel(language, caption: caption, highlighted: highlighted)
+        }
+        .buttonStyle(.plain)
+        .help("Pulsa para cambiar a \(language.opposite.displayName) y fijarlo a mano")
+    }
+
+    private func languagePillLabel(_ language: Language,
+                                   caption: String,
+                                   highlighted: Bool) -> some View {
         HStack(spacing: 8) {
             Text(language.flag)
                 .font(.system(size: 15))

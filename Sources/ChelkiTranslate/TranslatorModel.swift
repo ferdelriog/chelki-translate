@@ -60,6 +60,22 @@ final class TranslatorModel: ObservableObject {
 
     // Preferencias
     @Published var autoReadClipboard: Bool = true { didSet { persist() } }
+
+    /// Con la detección apagada mandas tú: el par de idiomas se queda como lo
+    /// dejaste y sólo cambia con el botón ⇄ o pulsando los idiomas.
+    @Published var autoDetectLanguage: Bool = true {
+        didSet {
+            persist()
+            // Al pasar a manual congelamos el idioma que estuviera en uso,
+            // para no quedar con el par sin definir.
+            if !autoDetectLanguage, sourceLanguage == nil {
+                sourceLanguage = detection?.language ?? .english
+            }
+            if !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                translate()
+            }
+        }
+    }
     @Published var autoCorrectGrammar: Bool = true {
         didSet {
             persist()
@@ -115,7 +131,9 @@ final class TranslatorModel: ObservableObject {
     /// aunque tengas un idioma fijado a mano: si pegas inglés teniendo
     /// español seleccionado, la app se cambia sola.
     var effectiveSource: Language {
-        if let detection, detection.isReliable { return detection.language }
+        if autoDetectLanguage, let detection, detection.isReliable {
+            return detection.language
+        }
         return sourceLanguage ?? detection?.language ?? .english
     }
 
@@ -127,7 +145,9 @@ final class TranslatorModel: ObservableObject {
 
     /// `true` cuando la detección pasó por encima de lo que habías elegido.
     var detectionOverrodeSelection: Bool {
-        guard let detection, detection.isReliable, let sourceLanguage else { return false }
+        guard autoDetectLanguage,
+              let detection, detection.isReliable,
+              let sourceLanguage else { return false }
         return detection.language != sourceLanguage
     }
 
@@ -135,14 +155,15 @@ final class TranslatorModel: ObservableObject {
         !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !status.isBusy
     }
 
-    /// Invierte la dirección. Si ya hay traducción, intercambia los textos:
-    /// la detección se encarga sola de la nueva dirección.
+    /// Invierte la dirección de la traducción.
+    ///
+    /// En automático basta con intercambiar los textos: la detección deduce
+    /// sola el nuevo sentido. En manual hay que dar vuelta el par a mano,
+    /// porque nadie más lo va a hacer.
     func swapLanguages() {
-        guard !outputText.isEmpty else {
-            sourceLanguage = effectiveTarget
-            targetLanguage = effectiveSource
-            return
-        }
+        setLanguages(source: effectiveTarget, target: effectiveSource)
+
+        guard !outputText.isEmpty else { return }
 
         let previousOutput = outputText
         outputText = inputText
@@ -150,6 +171,25 @@ final class TranslatorModel: ObservableObject {
         suggestion = nil
         refreshDetection()
         translate()
+    }
+
+    /// Fija el par de idiomas a mano. Apaga la detección automática, porque
+    /// si no volvería a pisar lo que acabas de elegir.
+    func chooseLanguage(_ language: Language, asSource: Bool) {
+        autoDetectLanguage = false
+        if asSource {
+            setLanguages(source: language, target: language.opposite)
+        } else {
+            setLanguages(source: language.opposite, target: language)
+        }
+        if !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            translate()
+        }
+    }
+
+    private func setLanguages(source: Language, target: Language) {
+        sourceLanguage = source
+        targetLanguage = target
     }
 
     // MARK: - Ciclo de vida del popover
@@ -390,6 +430,7 @@ final class TranslatorModel: ObservableObject {
         static let target = "targetLanguage"
         static let autoClipboard = "autoReadClipboard"
         static let autoCorrect = "autoCorrectGrammar"
+        static let autoDetect = "autoDetectLanguage"
     }
 
     private func persist() {
@@ -398,6 +439,7 @@ final class TranslatorModel: ObservableObject {
         defaults.set(targetLanguage.rawValue, forKey: Keys.target)
         defaults.set(autoReadClipboard, forKey: Keys.autoClipboard)
         defaults.set(autoCorrectGrammar, forKey: Keys.autoCorrect)
+        defaults.set(autoDetectLanguage, forKey: Keys.autoDetect)
     }
 
     private func restore() {
@@ -413,6 +455,9 @@ final class TranslatorModel: ObservableObject {
         }
         if defaults.object(forKey: Keys.autoCorrect) != nil {
             autoCorrectGrammar = defaults.bool(forKey: Keys.autoCorrect)
+        }
+        if defaults.object(forKey: Keys.autoDetect) != nil {
+            autoDetectLanguage = defaults.bool(forKey: Keys.autoDetect)
         }
     }
 }
